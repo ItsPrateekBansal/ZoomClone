@@ -23,10 +23,14 @@ app.get('/:room',(req,res)=>{
 io.on('connection',socket =>{
     socket.on('join-room',(roomId,userId)=>{
         socket.join(roomId);
+        socket.userId = userId;
+        socket.roomId = roomId;
         socket.to(roomId).broadcast.emit('user-connected',userId)
     })
     socket.on('disconnect',()=>{
-        socket.broadcast.emit('user-disconnected',socket.id)
+        if(socket.userId){
+            io.to(socket.roomId).emit('user-disconnected',socket.userId)
+        }
     })
 })
 server.listen(3000);
