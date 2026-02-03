@@ -16,7 +16,7 @@ app.get('/',(req,res)=>{
 });
 
 app.get('/:room',(req,res)=>{
-    res.render('room',{roomId:req.params.roomId})
+    res.render('room',{roomId:req.params.room})
 });
 
 
@@ -24,6 +24,9 @@ io.on('connection',socket =>{
     socket.on('join-room',(roomId,userId)=>{
         socket.join(roomId);
         socket.to(roomId).broadcast.emit('user-connected',userId)
+    })
+    socket.on('disconnect',()=>{
+        socket.broadcast.emit('user-disconnected',socket.id)
     })
 })
 server.listen(3000);
