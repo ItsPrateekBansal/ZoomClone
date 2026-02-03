@@ -1,9 +1,6 @@
-// const { PeerServer } = require('peer');
-
 const socket = io()
 const videoGrid = document.getElementById('video-grid');
 const myVideo = document.createElement('video');
-// const myAudio = document.createElement('audio');
 myVideo.muted = true;
 
 var peer = new Peer(undefined,{
@@ -12,6 +9,7 @@ var peer = new Peer(undefined,{
     port: '3000'
 });
 
+const peers = {}
 
 let myVideoStream
 
@@ -31,7 +29,15 @@ navigator.mediaDevices.getUserMedia({
         call.on('stream',userVideoStream=>{
             addVideoStream(video,userVideoStream)
         })
+        peers[call.peer] = { video, call }
+        call.on('close',()=>{
+            video.remove()
+            delete peers[call.peer]
+        })
     })
+}).catch(err => {
+    console.error('Failed to get media:', err);
+    alert('Camera/microphone access is required. Please allow permissions and refresh.');
 })
 
 peer.on('open',id=>{
@@ -39,18 +45,26 @@ peer.on('open',id=>{
     socket.emit('join-room',ROOMID,id);
 });
 
-
+socket.on('user-disconnected',(userId)=>{
+    if(peers[userId]){
+        peers[userId].video.remove()
+        peers[userId].call.close()
+        delete peers[userId]
+    }
+})
 
 const connectToNewUser = (userId,stream)=>{
-
     const call = peer.call(userId,stream)
     const video = document.createElement('video');
     call.on('stream',userVideoStream => {
         addVideoStream(video,userVideoStream)
     })
+    peers[userId] = { video, call }
+    call.on('close',()=>{
+        video.remove()
+        delete peers[userId]
+    })
 }
-
-
 
 const addVideoStream = (video,stream)=>{
     video.srcObject = stream;
